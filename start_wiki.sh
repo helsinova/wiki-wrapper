@@ -2,6 +2,8 @@
 
 set -o errexit
 
+THIS_WIKI_DIR=$(dirname $(readlink -f $0))
+TMP_CONFIG="/tmp/$(basename $THIS_WIKI_DIR).gititconfig"
 WIKI_PUBLIC="false";
 
 usage() {
@@ -14,17 +16,37 @@ Description:
     Starts this projects wiki http server
 
 OPTIONS:
-    -p, --public
+    -P, --public
         Start wiki-server in public mode. Default is local-host only
+    -p, --port
+        Run wiki-server at port. Default port is read from file "port.conf"
+        in same directory if it exists.
+    -c, --config-file
+        Use the following config file. Overloads any port arguments
     -h, --help
         This help
+
+ENV VARS:
+    Env-vars are used to set defaults. I.e. they can be used instead of
+    arguments. If both are given, env-vars are weaker.
+
+    PORT
+        Set default port
+    CONFIG_FILE
+        Set default config-file
 
 USAGE
 }
 
+#Load/assign defaults
+if [ -f ${THIS_WIKI_DIR}/port.conf ]; then
+	PORT=$(cat ${THIS_WIKI_DIR}/port.conf | head -n1)
+fi
+PORT=${PORT-"3366"}
+
 # Setup getopt.
-long_opts="public,help"
-getopt_cmd=$(getopt -o hp --long "$long_opts" \
+long_opts="public,port:,config-file:,help"
+getopt_cmd=$(getopt -o hp:Pc: --long "$long_opts" \
 	-n $(basename $0) -- "$@") || {
 		echo -e "\nERROR: Wrong options\nUse -h or --help for help";
 		exit 1;
@@ -33,7 +55,9 @@ eval set -- "$getopt_cmd"
 
 while true; do
     case "$1" in
-        -p|--public) WIKI_PUBLIC="true";;
+        -P|--public) WIKI_PUBLIC="true";;
+        -p|--port) PORT="$2"; shift;;
+        -c|--config-file) CONFIG_FILE="$2"; shift;;
         -h|--help) usage; exit 0;;
         --) shift; break;;
     esac
@@ -45,8 +69,10 @@ if [ $# -gt 0 ]; then
     exit 1
 fi
 
-THIS_WIKI_DIR=$(dirname $(readlink -f $0))
-CONFIG_FILE=${THIS_WIKI_DIR}/wiki.conf
+cat ${THIS_WIKI_DIR}/wiki.conf  | sed -Ee '/^port:/s/.*/port: '$PORT'/' > \
+	$TMP_CONFIG
+
+CONFIG_FILE=${CONFIG_FILE-"$TMP_CONFIG"}
 
 if [ -f ~/.cabal/bin/gitit ]; then
 	echo "Will start with local-build gitit binary... (preferred)"
