@@ -42,6 +42,9 @@ USAGE
 if [ -f ${THIS_WIKI_DIR}/port.conf ]; then
 	PORT=$(cat ${THIS_WIKI_DIR}/port.conf | head -n1)
 fi
+if [ -f ${THIS_WIKI_DIR}/../wiki_port.conf ]; then
+	PORT=$(cat ${THIS_WIKI_DIR}/../wiki_port.conf | head -n1)
+fi
 PORT=${PORT-"3366"}
 
 # Setup getopt.
