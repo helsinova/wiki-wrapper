@@ -7,7 +7,7 @@ TMP_CONFIG="/tmp/$(basename $THIS_WIKI_DIR).gititconfig"
 WIKI_PUBLIC="false";
 
 usage() {
-cat <<USAGE
+cat <<HERE-DOC
 
 Usage:
     bash $0 [OPTIONS]
@@ -19,10 +19,16 @@ OPTIONS:
     -P, --public
         Start wiki-server in public mode. Default is local-host only
     -p, --port
-        Run wiki-server at port. Default port is read from file "port.conf"
-        in same directory if it exists.
+        Run wiki-server at port. Default port is conditionally read from
+        file(s) "port.conf" if existing from the following directories
+        relative to this script in the following order:
+            * ./port.conf
+            * ../wiki_port.conf
+            * wikidata/port.conf
+        The latest file to be read will provide the default.
     -c, --config-file
-        Use the following config file. Overloads any port arguments
+        Use the following config file instead of default. Overloads any port
+        or other options.
     -h, --help
         This help
 
@@ -31,11 +37,19 @@ ENV VARS:
     arguments. If both are given, env-vars are weaker.
 
     PORT
-        Set default port
+        Set default port. Also see also -p option.
     CONFIG_FILE
-        Set default config-file
+        Set default config-file. Also see -c option.
 
-USAGE
+USAGE:
+    Invoke script from anywhere, optionally with pre-set envvariables.
+    Script will run in a screen-session in the back-ground. I.e. you can
+    attach to the session if you suspect errors to be printed on stdout or
+    to terminate it.
+
+    When script starts it will also open the root-page in your default
+    browser.
+HERE-DOC
 }
 
 #Load/assign defaults
@@ -44,6 +58,9 @@ if [ -f ${THIS_WIKI_DIR}/port.conf ]; then
 fi
 if [ -f ${THIS_WIKI_DIR}/../wiki_port.conf ]; then
 	PORT=$(cat ${THIS_WIKI_DIR}/../wiki_port.conf | head -n1)
+fi
+if [ -f ${THIS_WIKI_DIR}/wikidata/port.conf ]; then
+	PORT=$(cat ${THIS_WIKI_DIR}/wikidata/port.conf | head -n1)
 fi
 PORT=${PORT-"3366"}
 
